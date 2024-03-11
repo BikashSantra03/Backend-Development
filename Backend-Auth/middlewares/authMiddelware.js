@@ -1,29 +1,36 @@
-const { response } = require("express");
 const jwt = require("jsonwebtoken");
+require("colors");
 require("dotenv").config();
 
-exports.auth = async (req, res, next) => {
+exports.auth = (req, res, next) => {
   try {
-    const token = req.body.token || req.cookies.token;
+    console.log("Cookie:".bgBrightYellow, req.cookies?.Token);
+    console.log("Body:".bgBrightCyan, req.body?.token);
+    console.log("Header:".bgBrightGreen, req.header("Authorization"));
+    const token =
+      req.cookies?.Token ||
+      req.header("Authorization")?.replace("Bearer ", "") ||
+      req.body?.token;
 
     if (!token || token === undefined) {
-      return res.status(401).send({
+      return res.status(401).json({
         success: false,
         message: "Token Missing",
       });
     }
 
+    //verify the token
     try {
       const payload = jwt.verify(token, process.env.JWT_SECRET);
       console.log(payload);
-      req.user = payload;
+
+      req.user = payload; // very important. It adds payload (user info) in request object. Now we can fetch user details from request body from anywhere
     } catch (error) {
       return res.status(401).json({
         success: false,
         message: "token is invalid",
       });
     }
-
     next();
   } catch (error) {
     return res.status(401).json({
@@ -39,7 +46,7 @@ exports.isStudent = (req, res, next) => {
     if (req.user.role !== "Student") {
       return res.status(401).json({
         success: false,
-        message: "THis is a protected route for students",
+        message: "This is a protected route for students",
       });
     }
     next();
